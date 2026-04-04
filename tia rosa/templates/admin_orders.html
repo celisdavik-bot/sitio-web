@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pedidos - Panel Admin</title>
+
+    <!-- Bootstrap CDN -->
+    <link 
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" 
+        rel="stylesheet"
+    >
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-dark bg-dark">
+    <div class="container-fluid">
+        <span class="navbar-brand">Panel Administrador</span>
+        <a href="{{ url_for('index') }}" class="btn btn-outline-light">Volver</a>
+    </div>
+</nav>
+
+<div class="container my-4">
+
+    <h2 class="mb-4">Encargos / Pedidos</h2>
+
+    {% if orders %}
+        <table class="table table-striped table-bordered shadow-sm">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Usuario</th>
+                    <th>Total</th>
+                    <th>Estado</th>
+                    <th>Fecha</th>
+                    <th>Detalle</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for o in orders %}
+                <tr>
+                    <td>{{ o.get('id') }}</td>
+                    <td>{{ o.get('user_id') }}</td>
+                    <td>${{ o.get('total') }}</td>
+                    <td>{{ o.get('status') }}</td>
+                    <td>{{ o.get('created_at') }}</td>
+                    <td>
+                        <a 
+                            class="btn btn-primary btn-sm" 
+                            href="{{ url_for('order_detail_page', order_id=o.get('id')) }}">
+                            Ver
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="alert alert-info">No hay pedidos registrados.</div>
+    {% endif %}
+
+</div>
+
+<!-- Bootstrap JS -->
+<script 
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js">
+</script>
+
+</body>
+</html>

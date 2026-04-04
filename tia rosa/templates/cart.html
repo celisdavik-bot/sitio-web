@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Carrito - Mi Tienda</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+  <style>
+    .book-image { width: 80px; height: 100px; object-fit: contain; background:#f8f9fa; padding:6px; border-radius:6px; }
+    .qty-input { width: 80px; }
+    .table td, .table th { vertical-align: middle; }
+  </style>
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <div class="container">
+    <a class="navbar-brand" href="/"><img src="{{ url_for('static', filename='sources/corto.png') }}" 
+<<<<<<< HEAD
+     alt="Logo" style="height: 40px; border-radius: 8px;"></a>
+=======
+     alt="Logo"
+style="height: 40px; border-radius: 8px;"></a>
+>>>>>>> c8868379068986da1fb6f5e979199c1dd2f6b8fc
+    <div class="ms-auto">
+      <a href="/" class="btn btn-outline-light me-2">Seguir comprando</a>
+      {% if session.user_id %}
+        <a href="/logout" class="btn btn-outline-light">Cerrar sesión</a>
+      {% else %}
+        <a href="/login" class="btn btn-outline-light">Ingresar</a>
+      {% endif %}
+    </div>
+  </div>
+</nav>
+
+<div class="container my-5">
+  <h3>Tu carrito</h3>
+  <div id="alerts"></div>
+
+  {% if items %}
+  <div class="table-responsive">
+    <table class="table align-middle">
+      <thead>
+        <tr>
+          <th></th>
+          <th>Producto</th>
+          <th>Precio</th>
+          <th>Cantidad</th>
+          <th>Subtotal</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="cart-rows">
+        {% set total = 0 %}
+        {% for it in items %}
+<<<<<<< HEAD
+          {% if it.get('price') is not none %}
+            {% set price = it.get('price')*1000 %}
+          {% elif it.get('precio') is not none %}
+            {% set price = it.get('precio')*1000 %}
+          {% else %}
+            {% set price = 0 %}
+          {% endif %}
+          
+          {% set qty = it.get('qty') or it.get('quantity') or 1 %}
+          {% set subtotal = price * qty %}
+          {% set total = total + subtotal %}
+        <tr data-item-id="{{ it.get('id') }}" data-book-id="{{ it.get('book_id') }}">
+          <td style="width:90px;">
+            <img src="{{ it.get('image') or it.get('imagen') or '/static/img/placeholder.png' }}" 
+                 alt="{{ it.get('title') or it.get('titulo') or 'Libro' }}" class="book-image">
+          </td>
+          <td>
+            <div><strong>{{ it.get('title') or it.get('titulo') or 'Sin título' }}</strong></div>
+            <div class="text-muted small">ID libro: {{ it.get('book_id') }}</div>
+          </td>
+          <td class="price-cell">{{ '%.2f' % price }}</td>
+          <td>
+            <input type="number" min="1" class="form-control qty-input" value="{{ qty }}" data-item-id="{{ it.get('id') }}">
+          </td>
+          <td class="subtotal-cell">{{ '%.2f' % subtotal }}</td>
+          <td>
+            <button class="btn btn-sm btn-outline-danger remove-item-btn" data-item-id="{{ it.get('id') }}">
+              <i class="fa fa-trash"></i>
+            </button>
+=======
+          {% set price = None %}
+          {% if it.get('price') is not none %} {% set price = (it.get('price')*1000) %}
+          {% elif it.get('precio') is not none %} {% set price = it.get('precio') %}
+          {% endif %}
+          {% set qty = it.get('qty') if it.get('qty') is not none else (it.get('quantity') if it.get('quantity') is not none else 1) %}
+          {% set subtotal = (price * qty) if price else 0 %}
+          {% set total = total + subtotal %}
+        <tr data-item-id="{{ it.get('id') }}" data-book-id="{{ it.get('book_id') }}">
+          <td style="width:90px;">
+            <img src="{{ it.get('image') or it.get('imagen') or it.get('url') or '/static/img/placeholder.png' }}" alt="" class="book-image">
+          </td>
+          <td>
+            <div><strong>{{ it.get('title') or it.get('titulo') or it.get('book_title_from_books_table') or 'Sin título' }}</strong></div>
+            <div class="text-muted small">ID libro: {{ it.get('book_id') }}</div>
+          </td>
+          <td class="price-cell">{{ (('%.2f' % price) if price is not none else 'Sin precio') }}</td>
+          <td>
+            <input type="number" min="1" class="form-control qty-input" value="{{ qty }}" data-item-id="{{ it.get('id') }}">
+          </td>
+          <td class="subtotal-cell">{{ '%.2f' % subtotal if price else '0.00' }}</td>
+          <td>
+            <button class="btn btn-sm btn-outline-danger remove-item-btn" data-item-id="{{ it.get('id') }}"><i class="fa fa-trash"></i></button>
+>>>>>>> c8868379068986da1fb6f5e979199c1dd2f6b8fc
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="d-flex justify-content-end align-items-center mb-3">
+    <div class="me-4 text-end">
+      <div class="small text-muted">Total:</div>
+      <div class="h4" id="cart-total">{{ '%.2f' % total }}</div>
+    </div>
+    <div>
+<<<<<<< HEAD
+      <button id="checkout-btn" class="btn btn-success btn-lg">
+        <i class="fa fa-credit-card"></i> Pagar con Webpay
+      </button>
+    </div>
+  </div>
+
+  <!-- Form real de Webpay -->
+  <form id="webpay-form" action="/webpay/pagar" method="POST" style="display:none;">
+    <input type="hidden" name="shipping_address" id="webpay_shipping_address">
+    <input type="hidden" name="distributor_contact" id="webpay_distributor_contact">
+  </form>
+
+=======
+      <!-- Checkout local (siempre requiere sesión para crear orden). -->
+
+
+      <!-- Webpay form: redirige a /webpay/pagar (server genera token y redirige) -->
+      <form id="webpay-form" action="/webpay/pagar" method="POST" style="display:inline;">
+        <button class="btn btn-success btn-lg"><i class="fa fa-credit-card"></i> Pagar con Webpay</button>
+      </form>
+    </div>
+  </div>
+
+>>>>>>> c8868379068986da1fb6f5e979199c1dd2f6b8fc
+  {% else %}
+    <div class="alert alert-info">Tu carrito está vacío. <a href="/">Ir al catálogo</a></div>
+  {% endif %}
+</div>
+
+<<<<<<< HEAD
+<!-- Modal checkout -->
+=======
+<!-- Modal checkout (dirección) -->
+>>>>>>> c8868379068986da1fb6f5e979199c1dd2f6b8fc
+<div class="modal fade" id="checkoutModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <form id="checkout-form" class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Finalizar compra</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <div id="checkout-alerts"></div>
+        <div class="mb-3">
+          <label class="form-label">Dirección de envío</label>
+          <textarea name="shipping_address" id="shipping_address" class="form-control" required placeholder="Calle, número, comuna, ciudad"></textarea>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Contacto del distribuidor (opcional)</label>
+          <input type="text" name="distributor_contact" id="distributor_contact" class="form-control" placeholder="email@distribuidor.com">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Volver</button>
+        <button type="submit" class="btn btn-primary" id="confirm-checkout-btn">Confirmar pedido</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<<<<<<< HEAD
+=======
+
+>>>>>>> c8868379068986da1fb6f5e979199c1dd2f6b8fc
+<script>
+  // Helpers
+  function showAlert(msg, type="success", target="alerts", timeout=3000) {
+    const container = document.getElementById(target);
+    const el = document.createElement("div");
+    el.className = `alert alert-${type} alert-dismissible`;
+    el.innerHTML = `${msg} <button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+    container.appendChild(el);
+    setTimeout(()=> el.remove(), timeout);
+  }
+
+  async function postForm(url, formData) {
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams(formData).toString(),
+      credentials: "same-origin"
+    });
+    const text = await resp.text();
+    try { return { ok: resp.ok, status: resp.status, data: JSON.parse(text) }; }
+    catch (e) { return { ok: resp.ok, status: resp.status, data: text }; }
+  }
+
+  // Remove item
+  document.querySelectorAll(".remove-item-btn").forEach(btn=>{
+<<<<<<< HEAD
+    btn.addEventListener("click", async ()=>{
+      const itemId = btn.dataset.itemId;
+      btn.disabled = true;
+      const res = await postForm("/cart/remove", { item_id: itemId });
+      if (!res.ok) { showAlert("Error eliminando item", "danger"); btn.disabled = false; return; }
+=======
+    btn.addEventListener("click", async (e)=>{
+      const itemId = btn.dataset.itemId;
+      btn.disabled = true;
+      const res = await postForm("/cart/remove", { item_id: itemId });
+      if (!res.ok) {
+        showAlert((res.data && res.data.error) ? res.data.error : "Error eliminando item", "danger");
+        btn.disabled = false;
+        return;
+      }
+>>>>>>> c8868379068986da1fb6f5e979199c1dd2f6b8fc
+      const row = document.querySelector(`tr[data-item-id='${itemId}']`);
+      if (row) row.remove();
+      recalcTotalAndCount();
+      showAlert("Item eliminado", "success");
+    });
+  });
+
+<<<<<<< HEAD
+  // Quantity change
+  document.querySelectorAll(".qty-input").forEach(input=>{
+    input.addEventListener("change", async ()=>{
+      const qty = parseInt(input.value) || 1;
+      if (qty < 1) input.value = 1;
+      const row = input.closest("tr");
+      const price = parseFloat(row.querySelector(".price-cell").textContent) || 0;
+      row.querySelector(".subtotal-cell").textContent = (price * qty).toFixed(2);
+      recalcTotalAndCount();
+      const res = await postForm("/cart/update", { item_id: input.dataset.itemId, qty: qty });
+      if (!res.ok) showAlert("Error actualizando cantidad", "danger");
+    });
+  });
+
+  // Recalcular total
+  function recalcTotalAndCount() {
+    let total = 0;
+    document.querySelectorAll("#cart-rows tr").forEach(r=>{
+      const subtotal = parseFloat(r.querySelector(".subtotal-cell").textContent) || 0;
+      total += subtotal;
+    });
+    document.getElementById("cart-total").textContent = total.toFixed(2);
+=======
+  // Quantity change -> update UI and optionally update backend
+  document.querySelectorAll(".qty-input").forEach(input=>{
+    input.addEventListener("change", async (e)=>{
+      const qty = parseInt(input.value) || 1;
+      if (qty < 1) input.value = 1;
+      const itemId = input.dataset.itemId;
+      const row = input.closest("tr");
+      const priceCell = row.querySelector(".price-cell").textContent.trim();
+      let price = parseFloat(priceCell) || 0;
+      const subtotalCell = row.querySelector(".subtotal-cell");
+      subtotalCell.textContent = (price * qty).toFixed(2);
+      recalcTotalAndCount();
+
+      // persistir cantidad al backend (opcional)
+      const res = await postForm("/cart/update", { item_id: itemId, qty: qty });
+      if (!res.ok) {
+        showAlert("Error actualizando cantidad", "danger");
+      }
+    });
+  });
+
+  function recalcTotalAndCount() {
+    let total = 0;
+    const rows = document.querySelectorAll("#cart-rows tr");
+    let itemCount = 0;
+    rows.forEach(r=>{
+      const subtotal = parseFloat(r.querySelector(".subtotal-cell").textContent) || 0;
+      total += subtotal;
+      itemCount += parseInt(r.querySelector(".qty-input").value) || 0;
+    });
+    const totalEl = document.getElementById("cart-total");
+    if (totalEl) totalEl.textContent = total.toFixed(2);
+    const cartCountEl = document.getElementById("cart-count");
+    if (cartCountEl) cartCountEl.textContent = itemCount;
+>>>>>>> c8868379068986da1fb6f5e979199c1dd2f6b8fc
+  }
+
+  // Checkout modal
+  const checkoutBtn = document.getElementById("checkout-btn");
+  const checkoutModalEl = document.getElementById("checkoutModal");
+  const checkoutModal = new bootstrap.Modal(checkoutModalEl);
+  checkoutBtn && checkoutBtn.addEventListener("click", ()=> checkoutModal.show());
+
+<<<<<<< HEAD
+  // Confirm checkout
+  document.getElementById("checkout-form")?.addEventListener("submit", e=>{
+    e.preventDefault();
+    const address = document.getElementById("shipping_address").value.trim();
+    const distributor = document.getElementById("distributor_contact").value.trim();
+    if (!address) { 
+      showAlert("Debes ingresar una dirección de envío","warning","checkout-alerts"); 
+      return; 
+    }
+    // Copiar datos al form real de Webpay
+    document.getElementById("webpay_shipping_address").value = address;
+    document.getElementById("webpay_distributor_contact").value = distributor;
+    // Enviar
+    document.getElementById("webpay-form").submit();
+  });
+
+  // Inicializar total dinámico
+  recalcTotalAndCount();
+</script>
+=======
+  document.getElementById("checkout-form")?.addEventListener("submit", async (e)=>{
+    e.preventDefault();
+    const address = document.getElementById("shipping_address").value.trim();
+    const distributor = document.getElementById("distributor_contact").value.trim();
+    if (!address) { showAlert("Debes ingresar una dirección de envío","warning","checkout-alerts"); return; }
+    const res = await postForm("/checkout", { shipping_address: address, distributor_contact: distributor });
+    if (!res.ok) {
+      showAlert((res.data && res.data.error) ? res.data.error : `Error (${res.status}) al procesar checkout`,"danger","checkout-alerts");
+      return;
+    }
+    showAlert("Pedido realizado correctamente. Redirigiendo a pedidos...", "success");
+    checkoutModal.hide();
+    setTimeout(()=> location.href = "/orders", 900);
+  });
+
+  // inicializar
+  recalcTotalAndCount();
+</script>
+
+>>>>>>> c8868379068986da1fb6f5e979199c1dd2f6b8fc
+</body>
+</html>

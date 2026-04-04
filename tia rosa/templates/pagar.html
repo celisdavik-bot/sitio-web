@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Pagar - Webpay (demo) — Diagnóstico 405</title>
+  <style>
+    :root{--bg:#f6f8fa;--card:#ffffff;--accent:#0b63b8;--muted:#666}
+    body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial;margin:0;background:var(--bg);color:#111}
+    .wrap{max-width:820px;margin:36px auto;padding:20px}
+    .card{background:var(--card);border-radius:12px;padding:20px;box-shadow:0 6px 20px rgba(20,30,40,0.06)}
+    h1{margin:0 0 6px;font-size:20px}
+    p.lead{margin:0 0 12px;color:var(--muted)}
+    label{display:block;font-size:13px;margin-top:12px;color:var(--muted)}
+    input[type="text"],input[type="number"],select{width:100%;padding:10px;border-radius:8px;border:1px solid #e3e7ea;margin-top:6px;font-size:15px}
+    .row{display:grid;grid-template-columns:1fr 220px;gap:12px}
+    button{margin-top:16px;padding:10px 14px;border-radius:10px;border:0;background:var(--accent);color:#fff;font-weight:600;cursor:pointer}
+    button.ghost{background:#fff;border:1px solid #e3e7ea;color:#111}
+    .help{font-size:13px;color:var(--muted);margin-top:8px}
+    .result{margin-top:16px;padding:12px;border-radius:8px;background:#f2f8ff;color:#08306b}
+    .error{background:#fff4f4;color:#7a1a1a}
+    pre{background:#f6f6f6;padding:10px;border-radius:8px;overflow:auto}
+    .flex{display:flex;gap:8px;align-items:center}
+    .small{font-size:13px;color:var(--muted)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Pagar con Webpay — Demo + Diagnóstico 405</h1>
+      <p class="lead">Este archivo es la parte frontal (HTML + JS). Si al crear la transacción obtienes un error <strong>405</strong> (Method Not Allowed) significa que tu backend no acepta <code>POST /create-transaction</code>. Aquí hay herramientas para probar y diagnosticar, y una alternativa automática (GET) que puede ayudar en entornos de prueba.</p>
+
+      <form id="payForm">
+        <label for="backendUrl">URL del endpoint backend</label>
+        <input id="backendUrl" name="backendUrl" type="text" value="/create-transaction" required />
+
+        <div class="row">
+          <div>
+            <label for="orderId">Order ID</label>
+            <input id="orderId" name="orderId" type="text" value="order-{{timestamp}}" required />
+
+            <label for="amount">Monto (CLP)</label>
+            <input id="amount" name="amount" type="number" min="1" step="1" value="1000" required />
+
+            <label for="session">Session (opcional)</label>
+            <input id="session" name="session" type="text" placeholder="session123" />
+
+            <label for="method">Método preferido</label>
+            <select id="method">
+              <option value="post">POST (recomendado)</option>
+              <option value="get">GET (fallback)</option>
+            </select>
+
+            <div class="flex">
+              <button type="submit">Pagar</button>
+              <button type="button" id="mockBtn" class="ghost">Simular backend (mock)</button>
+            </div>
+          </div>
+
+          <div>
+            <div class="small"><strong>Diagnóstico en vivo</strong></div>
+            <div id="status" aria-live="polite"></div>
+
+            <div class="help"><strong>Nota:</strong> Webpay requiere un backend que use SDK de Transbank para crear la transacción y devolver la URL de redirección. Si tu backend devuelve 405, revisa que la ruta exista y que acepte POST.</div>
+
+            <div style="margin-top:12px">
+              <details>
+                <summary>Comandos de ejemplo (usar según tu stack)</summary>
+                <div style="margin-top:8px">
+                  <div class="small">Express (Node.js) - controlador mínimo que acepta POST:</div>
+                  <pre>const express = require('express');
+const app = express();
+app.use(express.json());
+app.post('/create-transaction', (req, res) =&gt; {
+  // aquí crearías la transacción con SDK Transbank
+  res.json({ redirectUrl: 'https://example.com/mock-pay' });
+});
+app.listen(3000);
+</pre>
+
+                  <div class="small">PHP (ejemplo básico):</div>
+                  <pre>&lt;?php
+if($_SERVER['REQUEST_METHOD'] !== 'POST'){ http_response_code(405); echo 'Method not allowed'; exit; }
+$body = json_decode(file_get_contents('php://input'), true);
+// crear la transacción con SDK y devolver JSON
+echo json_encode(['redirectUrl' =&gt; 'https://example.com/mock-pay']);
+?&gt;
+</pre>
+                </div>
+              </details>
+            </div>
+
+          </div>
+        </div>
+      </form>
+
+      <div style="margin-top:12px">
+        <strong>Respuesta esperada del backend (JSON)</strong>
+        <pre>{
+  "redirectUrl": "https://webpay.transbank...",
+  // o alternativamente
+  "token_ws": "..."
+}</pre>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // Helper: reemplazar timestamp
+    (function(){
+      const el = document.getElementById('orderId');
+      if(el && el.value.includes('{{timestamp}}')) el.value = el.value.replace('{{timestamp}}', Date.now());
+    })();
+
+    const form = document.getElementById('payForm');
+    const status = document.getElementById('status');
+    const mockBtn = document.getElementById('mockBtn');
+
+    let mockMode = false;
+
+    mockBtn.addEventListener('click', () =&gt; {
+      mockMode = !mockMode;
+      mockBtn.textContent = mockMode ? 'Mock: ON (clic para desactivar)' : 'Simular backend (mock)';
+      mockBtn.classList.toggle('ghost');
+      status.innerHTML = mockMode ? '<div class="result">Modo mock activado: la "respuesta" será simulada localmente.</div>' : '';
+    });
+
+    async function tryPost(url, body){
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      return res;
+    }
+
+    async function tryGet(url, params){
+      const qs = new URLSearchParams(params).toString();
+      const full = url + (url.includes('?') ? '&' : '?') + qs;
+      const res = await fetch(full, { method: 'GET' });
+      return res;
+    }
+
+    form.addEventListener('submit', async (e) =&gt; {
+      e.preventDefault();
+      status.innerHTML = '';
+
+      const backendUrl = document.getElementById('backendUrl').value.trim() || '/create-transaction';
+      const orderId = document.getElementById('orderId').value.trim();
+      const amount = Number(document.getElementById('amount').value);
+      const sessionId = document.getElementById('session').value.trim() || ('s-'+Date.now());
+      const preferred = document.getElementById('method').value;
+
+      if(!orderId || !amount || amount <= 0){
+        status.innerHTML = '<div class="result error">Revisa los datos del formulario.</div>';
+        return;
+      }
+
+      const payload = { orderId, sessionId, amount };
+
+      try{
+        status.innerHTML = '<div class="result">Creando transacción...</div>';
+
+        if(mockMode){
+          // Simular respuesta válida
+          await new Promise(r =&gt; setTimeout(r, 500));
+          const mock = { redirectUrl: 'https://webpay-demo.local/mock-pay?order=' + encodeURIComponent(orderId) };
+          status.innerHTML = '<div class="result">Mock: redirigiendo a ' + mock.redirectUrl + '</div>';
+          window.location.href = mock.redirectUrl;
+          return;
+        }
+
+        // Intento principal: POST (recomendado)
+        let res;
+        if(preferred === 'post'){
+          try{
+            res = await tryPost(backendUrl, payload);
+          }catch(err){
+            throw new Error('No se pudo conectar al backend: ' + err.message);
+          }
+
+          // Si servidor responde 405 -> intentar fallback GET automáticamente
+          if(res.status === 405){
+            status.innerHTML = '<div class="result error">Servidor respondió 405 (Method Not Allowed). Intentando GET como fallback para diagnóstico...</div>';
+            try{
+              res = await tryGet(backendUrl, payload);
+            }catch(err){
+              throw new Error('GET fallback falló: ' + err.message);
+            }
+          }
+        } else {
+          // El usuario seleccionó GET explícitamente
+          try{
+            res = await tryGet(backendUrl, payload);
+          }catch(err){
+            throw new Error('GET falló: ' + err.message);
+          }
+        }
+
+        // Si aún no ok, mostrar info detallada
+        if(!res.ok){
+          const text = await res.text().catch(()=>'(no body)');
+          status.innerHTML = '<div class="result error">Error del servidor: ' + res.status + '\n\n' + escapeHtml(text) + '</div>';
+          // Sugerir soluciones rápidas
+          appendSuggestions(res.status);
+          return;
+        }
+
+        // Intentar parsear JSON
+        let data;
+        try{ data = await res.json(); }catch(err){
+          const text = await res.text().catch(()=>'(no body)');
+          status.innerHTML = '<div class="result error">Respuesta inesperada (no JSON): ' + escapeHtml(text) + '</div>';
+          return;
+        }
+
+        // Buscar redirectUrl / token_ws
+        if(data && (data.redirectUrl || data.url || data.paymentUrl)){
+          const url = data.redirectUrl || data.url || data.paymentUrl;
+          status.innerHTML = '<div class="result">Redirigiendo a Webpay...</div>';
+          window.location.href = url;
+          return;
+        }
+
+        if(data && data.token_ws){
+          // Si backend devuelve token_ws, se puede construir la URL (idealmente el backend lo hace)
+          const endpoint = data.test ? 'https://whitelabel.transbank.cl/webpay-web' : 'https://webpay.transbank.cl';
+          const redirect = endpoint + '?token_ws=' + encodeURIComponent(data.token_ws);
+          status.innerHTML = '<div class="result">Redirigiendo a Webpay (token_ws)...</div>';
+          window.location.href = redirect;
+          return;
+        }
+
+        status.innerHTML = '<div class="result error">Respuesta JSON recibida, pero no contiene redirectUrl ni token_ws. Revisa el backend.</div>';
+
+      }catch(err){
+        status.innerHTML = '<div class="result error">' + escapeHtml(err.message || err) + '</div>';
+        console.error(err);
+      }
+    });
+
+    function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    function appendSuggestions(statusCode){
+      const c = Number(statusCode);
+      let html = '';
+      if(c === 404){
+        html = '<div class="help">Sugerencia: la ruta no existe (404). Revisa que el path y el puerto sean correctos y que el servidor esté levantado.</div>';
+      } else if(c === 405){
+        html = '<div class="help">Sugerencia: el servidor existe pero no acepta el método. Asegúrate de que tu endpoint implemente <code>POST</code> en esa ruta. En Express: <code>app.post(\'/create-transaction\', ...)</code>.</div>';
+      } else if(c >= 500){
+        html = '<div class="help">Sugerencia: error interno (500+). Revisa logs del servidor para ver excepción al crear la transacción.</div>';
+      } else {
+        html = '<div class="help">Sugerencia: revisa la respuesta del servidor y logs. Si tu backend requiere autenticación o cabeceras especiales, asegúrate de enviarlas.</div>';
+      }
+      status.innerHTML += html;
+    }
+
+  </script>
+</body>
+</html>

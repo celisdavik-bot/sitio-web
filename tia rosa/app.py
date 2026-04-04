@@ -771,7 +771,7 @@ def index():
         user_id = session.get("user_id")
         # asegurar session cart id para guest
         if not user_id:
-            if "cart_session_id" not in session:=======
+            if "cart_session_id" not in session:
                 session["cart_session_id"] = str(uuid.uuid4())
             sid = session["cart_session_id"]
             try:
@@ -785,8 +785,7 @@ def index():
                 cart = get_cart_fn(user_id, None)
         cart_count = len(cart.get("items", [])) if cart else 0
 
-    return render_template("index.html", books=books, cart_count=cart_count, q=(q or ""))
-
+    return render_template("index.html", books=books, cart_count=cart_count, q=(q or ""), total_pages=1)
 @app.route("/registrar")
 def registrar():
     return render_template("registrar.html")
@@ -1109,8 +1108,5 @@ def order_detail_page(order_id):
     if not order or order.get("user_id") != user_id:
         return "Pedido no encontrado o sin permisos", 404
     return render_template("order_detail.html", order=order)
-
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000, debug=True)
-
->>>>>>> c8868379068986da1fb6f5e979199c1dd2f6b8fc

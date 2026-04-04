@@ -1111,6 +1111,6 @@ def order_detail_page(order_id):
     return render_template("order_detail.html", order=order)
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=443, debug=True)
+    app.run(host="127.0.0.1", port=5000, debug=True)
 
 >>>>>>> c8868379068986da1fb6f5e979199c1dd2f6b8fc

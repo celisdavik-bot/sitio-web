@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Catálogo - Mi Tienda</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+  <style>
+    .book-card { min-height: 340px; }
+    .book-image { height: 160px; object-fit: contain; background: #f8f9fa; border-radius: 6px; padding: 12px; }
+    .badge-cart { position: relative; top: -2px; }
+  </style>
+</head>
+<body class="bg-light">
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <div class="container">
+
+      <button class="btn btn-outline-light" type="submit"><i class="fa fa-search"></i></button>
+    </form>
+
+    <div class="ms-auto d-flex align-items-center">
+      <a href="/cart" class="btn btn-outline-light position-relative me-2" id="cart-btn">
+        <i class="fa fa-shopping-cart"></i> Carrito
+        <span class="badge bg-danger ms-2" id="cart-count">{{ cart_count }}</span>
+      </a>
+
+      {% if session.user_id %}
+        <span class="text-white me-2">Hola, {{ session.user_name or 'Usuario' }}</span>
+        <a href="/logout" class="btn btn-outline-light">Cerrar sesión</a>
+      {% else %}
+        <a href="/login" class="btn btn-outline-light">Ingresar</a>
+      {% endif %}
+    </div>
+  </div>
+</nav>
+
+<div class="container my-4">
+  <div id="alerts"></div>
+
+  <div class="row mb-3">
+    <div class="col">
+      <h4 class="mb-0">Catálogo</h4>
+      <small class="text-muted">Resultados{{ ' para: ' + q if q }}</small>
+    </div>
+  </div>
+
+  <div class="row g-3" id="books-grid">
+    {% if books %}
+      {% for b in books %}
+        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+          <div class="card book-card h-100">
+            <div class="card-body d-flex flex-column">
+              <img src="{{ b.get('image') or b.get('imagen') or b.get('url') or '/static/img/placeholder.png' }}"
+                   alt="{{ b.get('title') or b.get('titulo') or 'Libro' }}"
+                   class="book-image mb-3">
+
+              <h6 class="card-title">{{ b.get('title') or b.get('titulo') or b.get('name') or 'Sin título' }}</h6>
+              <p class="text-muted mb-1 small">{{ b.get('author') or b.get('autor') or '' }}</p>
+
+              <p class="mt-auto mb-2">
+                <strong>
+                  {{ (b.get('price') or b.get('precio') or (b.get('ro_chile_u')*1000) or b.get('valor')) 
+                     if (b.get('price') or b.get('precio') or b.get('ro_chile_u') or b.get('valor')) else 'Sin precio' }}
+                  {% if (b.get('price') or b.get('precio') or b.get('ro_chile_u') or b.get('valor')) %}
+                    <small class="text-muted">CLP</small>
+                  {% endif %}
+                </strong>
+              </p>
+
+              <div class="d-grid gap-2">
+                <button class="btn btn-sm btn-primary add-to-cart-btn" data-book-id="{{ b.get('id') }}">
+                  <i class="fa fa-cart-plus"></i> Añadir al carrito
+                </button>
+                <a href="/books/{{ b.get('id') }}" class="btn btn-sm btn-outline-secondary">Ver detalle</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="col-12">
+        <div class="alert alert-info">No se encontraron libros.</div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // Añadir al carrito vía fetch (form-encoded)
+  async function addToCart(bookId, qty = 1) {
+    const form = new URLSearchParams();
+    form.append("book_id", bookId);
+    form.append("qty", qty);
+
+    const resp = await fetch("/cart/add", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded", "Accept": "application/json" },
+      body: form.toString()
+    });
+
+    if (!resp.ok) {
+      const data = await resp.json().catch(()=>({}));
+      showAlert(data.error || "Error al agregar al carrito", "danger");
+      return null;
+    }
+    const data = await resp.json();
+    return data;
+  }
+
+  function showAlert(msg, type="success", timeout=2500) {
+    const alerts = document.getElementById("alerts");
+    const id = 'a' + Date.now();
+    const el = document.createElement('div');
+    el.id = id;
+    el.className = `alert alert-${type} alert-dismissible`;
+    el.innerHTML = `${msg} <button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+    alerts.appendChild(el);
+    setTimeout(()=> {
+      try { el.remove(); } catch(e){}
+    }, timeout);
+  }
+
+  // hookup botones
+  document.querySelectorAll(".add-to-cart-btn").forEach(btn=>{
+    btn.addEventListener("click", async (e)=>{
+      const bookId = btn.dataset.bookId;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Añadiendo...';
+      const res = await addToCart(bookId, 1);
+      if (res) {
+        showAlert("Libro agregado al carrito", "success");
+        // actualizar contador de carrito (intentamos leer /cart para obtener nueva cuenta)
+        try {
+          const cartRes = await fetch("/cart");
+          const cartJson = await cartRes.json();
+          const count = (cartJson.items || []).length || 0;
+          document.getElementById("cart-count").textContent = count;
+        } catch (e) { /* no crítico */ }
+      }
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa fa-cart-plus"></i> Añadir al carrito';
+    });
+  });
+</script>
+</body>
+</html>

@@ -210,7 +210,7 @@ def login():
                 <button type="submit">Login</button>
             </form>
         """
-
+        
 @app.route("/logout")
 def logout():
     session.clear()

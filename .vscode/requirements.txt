@@ -1,0 +1,4 @@
+Flask
+pandas
+transbank-sdk
+werkzeug

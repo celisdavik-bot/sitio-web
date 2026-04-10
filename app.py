@@ -670,4 +670,4 @@ def webpay_confirmacion():
     return render_template("webpay_result.html", success=True, detail=commit_resp, token=token)
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
